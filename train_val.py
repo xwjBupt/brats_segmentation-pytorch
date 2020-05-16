@@ -9,6 +9,7 @@ from utils import init_env, mkdir
 from solver import make_optimizer
 import os
 import torch
+import torch.nn as nn
 from utils.logger import setup_logger
 from utils.metric_logger import MetricLogger
 import logging
@@ -58,7 +59,8 @@ def train_val(model, loaders, optimizer, scheduler, losses, metrics=None):
             logger = logging.getLogger(phase)
             total = len(loader)
             for batch_id, (batch_x, batch_y) in enumerate(loader):
-                batch_x, batch_y = batch_x.cuda(async=True), batch_y.cuda(async=True)
+                batch_x = batch_x.cuda(async=True)
+                batch_y = batch_y.cuda(async=True)
                 with torch.set_grad_enabled(phase == 'train'):
                     output, vout, mu, logvar = model(batch_x)
                     loss_dict = losses['dice_vae'](cfg, output, batch_x, batch_y, vout, mu, logvar)
@@ -83,7 +85,10 @@ def train_val(model, loaders, optimizer, scheduler, losses, metrics=None):
             if phase == 'eval':
                 dice = 1 - (meters.wt_loss.global_avg + meters.tc_loss.global_avg + meters.et_loss.global_avg) / 3
                 state = {}
-                state['model'] = model.state_dict()
+                if len(cfg.GPU.ID>1):
+                    state['model'] = model.module.state_dict()
+                else:
+                    state['model'] = model.state_dict()
                 state['optimizer'] = optimizer.state_dict()
                 file_name = os.path.join(cfg.LOG_DIR, cfg.TASK_NAME, 'epoch' + str(epoch) + '.pt')
                 torch.save(state, file_name)
@@ -94,9 +99,12 @@ def train_val(model, loaders, optimizer, scheduler, losses, metrics=None):
     return model
 
 def main():
-    init_env('1')
+    init_env(cfg.GPU.ID)
     loaders = make_data_loaders(cfg)
     model = build_model(cfg)
+    if len(cfg.GPU.ID>1):
+        model = nn.DataParallel(model) 
+
     model = model.cuda()
     task_name = 'base_unet'
     log_dir = os.path.join(cfg.LOG_DIR, task_name)
@@ -106,6 +114,7 @@ def main():
     logger.info(cfg)
     logger = setup_logger('eval', log_dir, filename='eval.log')
     optimizer, scheduler = make_optimizer(cfg, model)
+    optimizer.cuda()
     metrics = get_metrics(cfg)
     losses = get_losses(cfg)
     train_val(model, loaders, optimizer, scheduler, losses, metrics)

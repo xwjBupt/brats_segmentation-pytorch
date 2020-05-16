@@ -11,16 +11,19 @@ _C.DATASET = CN()
 if "Win" in platform.system():
     _C.DATASET.DATA_ROOT = 'G:/data_repos/Brats2018'
 else:
-    _C.DATASET.DATA_ROOT = "/home/share/data_repos/Brats2018"
+    _C.DATASET.DATA_ROOT = '/data/xwj_work/Brats2019/train/'
 
-_C.DATASET.NUM_FOLDS = 4
+    
+    
+
+_C.DATASET.NUM_FOLDS = 5
 _C.DATASET.SELECT_FOLD = 0
 _C.DATASET.USE_MODES = ("t1", "t2", "flair", "t1ce")
-_C.DATASET.INPUT_SHAPE = (160, 192, 128)
+_C.DATASET.INPUT_SHAPE = (128, 128, 128)
 
 _C.DATALOADER = CN()
-_C.DATALOADER.BATCH_SIZE = 1
-_C.DATALOADER.NUM_WORKERS = 6
+_C.DATALOADER.BATCH_SIZE = 4
+_C.DATALOADER.NUM_WORKERS = 8
 
 _C.MODEL = CN()
 _C.MODEL.NAME = 'unet-vae'
@@ -33,6 +36,9 @@ _C.SOLVER.LEARNING_RATE = 1e-3
 _C.SOLVER.WEIGHT_DECAY = 1e-5
 _C.SOLVER.POWER = 0.9
 _C.SOLVER.NUM_EPOCHS = 300
+
+_C.GPU = CN()
+_C.GPU.ID = '0,1,2,3'
 
 _C.MISC = CN()
 _C.LOG_DIR = './logs'

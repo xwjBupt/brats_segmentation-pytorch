@@ -8,7 +8,7 @@ import torch
 import warnings
 import numpy as np
 
-def init_env(gpu_id='0', seed=42):
+def init_env(gpu_id='0,1,2,3', seed=4892):
     os.environ["CUDA_VISIBLE_DEVICES"] = gpu_id
     random.seed(seed)
     np.random.seed(seed)
